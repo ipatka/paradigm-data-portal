@@ -4,7 +4,7 @@ requires = ["flit_core >=3.2, <4"]
 build-backend = "flit_core.buildapi"
 
 [project]
-name = "paradigm-data-portal"
+name = "paradigm-data-portal-s3"
 readme = "README.md"
 requires-python = ">=3.7"
 dynamic = ["version", "description"]
