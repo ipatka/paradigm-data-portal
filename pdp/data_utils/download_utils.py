@@ -40,6 +40,39 @@ def download_dataset(
         skip_existing=skip_existing,
     )
 
+def download_dataset_to_s3(
+    dataset: str,
+    *,
+    s3_client,
+    s3_bucket: str,
+    portal_root: str | None = None,
+    skip_existing: bool = True,
+) -> None:
+    """download files of a dataset"""
+
+    print('Downloading dataset:', dataset)
+
+    urls = get_dataset_file_urls(dataset, portal_root=portal_root)
+
+    base_url = os.path.dirname(urls[0])
+    readme_url = os.path.join(base_url, 'README.md')
+    manifest_url = os.path.join(base_url, 'dataset_manifest.json')
+    file_utils.download_files_to_s3(
+        urls=[readme_url, manifest_url],
+        s3_client=s3_client,
+        s3_bucket=s3_bucket,
+        prefix=dataset,
+        skip_existing=skip_existing,
+    )
+
+    # download files
+    file_utils.download_files_to_s3(
+        urls=urls,
+        s3_client=s3_client,
+        s3_bucket=s3_bucket,
+        prefix=dataset,
+        skip_existing=skip_existing,
+    )
 
 def get_dataset_file_urls(
     dataset: str,

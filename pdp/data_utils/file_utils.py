@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import typing
+import tempfile
 
 
 def download_files(
@@ -43,6 +44,47 @@ def download_files(
 
     print()
     print('done')
+
+def download_files_to_s3(
+    urls: typing.Sequence[str],
+    *,
+    s3_client,
+    s3_bucket: str,
+    prefix: str,
+    skip_existing: bool = True,
+) -> None:
+    """download a list of files and upload them to S3"""
+
+    # Create a temporary directory
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        print('downloading', len(urls), 'files')
+        print()
+        print('using tmp_dir', tmp_dir)
+
+        # skip existing files
+        if skip_existing:
+            response = s3_client.list_objects_v2(Bucket=s3_bucket, Prefix=prefix)
+            if 'Contents' in response:
+                existing_files = {obj['Key'] for obj in response['Contents']}
+                skip_urls = {url for url in urls if os.path.join(prefix, os.path.basename(url)) in existing_files}
+            else:
+                skip_urls = set()
+            if len(skip_urls) > 0:
+                print()
+                print('skipping', len(skip_urls), 'files that already exist')
+        else:
+            skip_urls = set()
+
+        # download files
+        for url in urls:
+            if url not in skip_urls:
+                local_path = os.path.join(tmp_dir, os.path.basename(url))
+                download_file(url, local_path)
+                s3_client.upload_file(local_path, s3_bucket, os.path.join(prefix, os.path.basename(url)))
+                os.remove(local_path)  # delete the file after upload
+
+        print()
+        print('done')
 
 
 def download_file(url: str, output_path: str | None = None) -> None:
